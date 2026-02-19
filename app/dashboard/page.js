@@ -36,18 +36,33 @@ export default function Dashboard() {
     if (!error) setKeys(data || []);
   };
 
-  const fetchInitialData = async () => {
-    // Using a placeholder or the first available key to load the table
-    const testKey = 'myapi_c18b783c19932ebd35e921b3ec280f95f539ab2bd5f8e70f';
+ const fetchInitialData = async () => {
+    // 1. First, check if there are any keys in the database for this user
+    const { data: userKeys } = await supabase
+      .from('api_keys')
+      .select('key_hash')
+      .limit(1);
+
+    // 2. If no keys exist, we can't fetch data yet
+    if (!userKeys || userKeys.length === 0) {
+      setData({ products: [] }); 
+      return;
+    }
+
+    // 3. Use the NEW key you just generated (if available) or a default
+    // For now, let's use the one you just copied to prove it works!
+    const activeKey = newKey || "myapi_18b134340d58a3c8f21fb80a9153e8b4db4a8abc2dc22ec6";
+
     try {
-      const res = await fetch('/api/data', { headers: { 'x-api-key': testKey } });
+      const res = await fetch('/api/data', { 
+        headers: { 'x-api-key': activeKey } 
+      });
       const json = await res.json();
       setData(json);
     } catch (e) {
-      console.error("Initial data fetch failed");
+      console.error("Fetch failed");
     }
   };
-
   const generateAndStoreKey = async () => {
     const res = await fetch('/api/keys/create', { method: 'POST' });
     const result = await res.json();
