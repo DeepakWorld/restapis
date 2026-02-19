@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [user, setUser] = useState(null);
+  const [keys, setKeys] = useState([]); // ✅ FIX: Initialize keys state
   const [newKey, setNewKey] = useState(null);
-  const [keys, setKeys] = useState([]); // ✅ ADDED: State for keys
   const router = useRouter();
 
   useEffect(() => {
@@ -19,25 +19,13 @@ export default function Dashboard() {
       }
       setUser(user);
 
-      // Fetch both product data and the user's keys
-      fetchData();
+      // Load existing keys and initial data
       fetchUserKeys();
+      fetchInitialData();
     };
 
     checkUserAndFetch();
   }, [router]);
-
-  const fetchData = async () => {
-    try {
-      // Note: In a real app, you'd use a key from your 'keys' state here
-      const apiKey = 'myapi_c18b783c19932ebd35e921b3ec280f95f539ab2bd5f8e70f';
-      const res = await fetch('/api/data', { headers: { 'x-api-key': apiKey } });
-      const json = await res.json();
-      setData(json);
-    } catch (err) {
-      console.error("Data fetch error:", err);
-    }
-  };
 
   const fetchUserKeys = async () => {
     const { data, error } = await supabase
@@ -48,50 +36,44 @@ export default function Dashboard() {
     if (!error) setKeys(data || []);
   };
 
-  const revokeKey = async (keyId) => {
-    if (!confirm("Are you sure? Any app using this key will stop working immediately.")) return;
-
-    const { error } = await supabase
-      .from('api_keys')
-      .delete()
-      .eq('id', keyId); // Changed .match to .eq for reliability
-
-    if (error) {
-      alert("Error revoking key: " + error.message);
-    } else {
-      fetchUserKeys(); // Refresh the list
+  const fetchInitialData = async () => {
+    // Using a placeholder or the first available key to load the table
+    const testKey = 'myapi_c18b783c19932ebd35e921b3ec280f95f539ab2bd5f8e70f';
+    try {
+      const res = await fetch('/api/data', { headers: { 'x-api-key': testKey } });
+      const json = await res.json();
+      setData(json);
+    } catch (e) {
+      console.error("Initial data fetch failed");
     }
   };
 
   const generateAndStoreKey = async () => {
-    try {
-      const res = await fetch('/api/keys/create', { method: 'POST' });
-      if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    const res = await fetch('/api/keys/create', { method: 'POST' });
+    const result = await res.json();
+    
+    if (result.apiKey) {
+      const { error } = await supabase
+        .from('api_keys')
+        .insert([{ 
+          user_id: user.id, 
+          key_hash: result.keyHash, 
+          key_name: 'Main Key' 
+        }]);
 
-      const result = await res.json();
-      
-      if (result.apiKey) {
-        const { error } = await supabase
-          .from('api_keys')
-          .insert([{ 
-            user_id: user.id, 
-            key_hash: result.keyHash, 
-            key_name: 'Main Key' 
-          }]);
-
-        if (error) {
-          alert("Database Error: " + error.message);
-        } else {
-          setNewKey(result.apiKey);
-          fetchUserKeys(); // Refresh the list so the new key appears
-        }
+      if (!error) {
+        setNewKey(result.apiKey);
+        fetchUserKeys(); // Refresh the list so it shows up
       }
-    } catch (err) {
-      alert("Something went wrong. Check the console.");
     }
   };
 
-  // Loading state
+  const revokeKey = async (keyId) => {
+    if (!confirm("Revoke this key?")) return;
+    const { error } = await supabase.from('api_keys').delete().eq('id', keyId);
+    if (!error) fetchUserKeys();
+  };
+
   if (!user) return <div style={{padding: '50px'}}>Authenticating...</div>;
 
   return (
@@ -108,53 +90,45 @@ export default function Dashboard() {
       {newKey && (
         <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#e0f2fe', borderRadius: '5px' }}>
           <strong>Your New Key:</strong> <code>{newKey}</code>
-          <p style={{fontSize: '12px', color: '#0369a1'}}>This key hash is now linked to your User ID. Save it now; you won't see it again!</p>
+          <p style={{fontSize: '12px'}}>Copy this now! It won't be shown again.</p>
         </div>
       )}
 
-      <h2 style={{marginTop: '40px'}}>Your Active Keys</h2>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-        <thead style={{ backgroundColor: '#f3f4f6' }}>
-          <tr>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Label</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Created</th>
-            <th style={{ padding: '12px', textAlign: 'right' }}>Action</th>
+      <h2 style={{marginTop: '40px'}}>Active API Keys</h2>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+            <th>Label</th>
+            <th>Created</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {keys.map(k => (
             <tr key={k.id}>
-              <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{k.key_name}</td>
-              <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{new Date(k.created_at).toLocaleDateString()}</td>
-              <td style={{ padding: '12px', borderBottom: '1px solid #eee', textAlign: 'right' }}>
-                <button onClick={() => revokeKey(k.id)} style={{color: 'red', border: 'none', background: 'none', cursor: 'pointer'}}>Revoke</button>
+              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{k.key_name}</td>
+              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{new Date(k.created_at).toLocaleDateString()}</td>
+              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
+                <button onClick={() => revokeKey(k.id)} style={{ color: 'red', cursor: 'pointer', border: 'none', background: 'none' }}>Revoke</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {data && (
-        <>
-          <h2 style={{marginTop: '40px'}}>Secure Product Data</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-            <thead style={{ backgroundColor: '#f3f4f6' }}>
-              <tr>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Product</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Price</th>
+      <h2 style={{marginTop: '40px'}}>Secure Product Data</h2>
+      {data?.products ? (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            {data.products.map(p => (
+              <tr key={p.id}>
+                <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{p.name}</td>
+                <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>${p.price}</td>
               </tr>
-            </thead>
-            <tbody>
-              {data.products.map(p => (
-                <tr key={p.id}>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{p.name}</td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>${p.price}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+            ))}
+          </tbody>
+        </table>
+      ) : <p>Loading data...</p>}
     </div>
   );
 }
