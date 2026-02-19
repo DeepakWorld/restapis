@@ -30,21 +30,37 @@ export default function Dashboard() {
   }, [router]);
 
   const generateAndStoreKey = async () => {
-    // This calls your key generator logic
-    const res = await fetch('/api/keys/create', { method: 'POST' });
-    const result = await res.json();
-    
-    if (result.apiKey) {
-      // 3. STORE the hash in Supabase linked to THIS user
-      const { error } = await supabase
-        .from('api_keys')
-        .insert([{ 
-          user_id: user.id, 
-          key_hash: result.keyHash, 
-          key_name: 'Main Key' 
-        }]);
+    try {
+      const res = await fetch('/api/keys/create', { method: 'POST' });
+      
+      // Check if the response is actually okay before parsing JSON
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Server Error:", text);
+        alert(`API Error (${res.status}): Make sure the API route exists and supports POST.`);
+        return;
+      }
 
-      if (!error) setNewKey(result.apiKey);
+      const result = await res.json();
+      
+      if (result.apiKey) {
+        const { error } = await supabase
+          .from('api_keys')
+          .insert([{ 
+            user_id: user.id, 
+            key_hash: result.keyHash, 
+            key_name: 'Main Key' 
+          }]);
+
+        if (error) {
+          alert("Database Error: " + error.message);
+        } else {
+          setNewKey(result.apiKey);
+        }
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      alert("Something went wrong. Check the console.");
     }
   };
 
