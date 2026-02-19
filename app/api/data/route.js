@@ -1,17 +1,14 @@
-import { validateKey } from '@/lib/auth';
-// import { getKeyFromDb } from '@/lib/db';
+import { generateAPIKey } from '../../../lib/auth';
 
-export async function GET(request) {
-  const apiKey = request.headers.get('x-api-key');
-  
-  // 1. Fetch the stored hash from your DB based on user info or prefix
-  // const storedHash = await getKeyFromDb(...);
+export const dynamic = 'force-dynamic'; // This forces Vercel to not cache the old version
 
-  const isValid = validateKey(apiKey, storedHash);
+export async function POST(request) {
+  const { rawKey, keyHash } = generateAPIKey();
 
-  if (!isValid) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  return Response.json({ data: "Success! Here is your protected data." });
+  return Response.json({ 
+    apiKey: rawKey,
+    keyHash: keyHash, 
+    message: "HASH_IS_NOW_ACTIVE",
+    debug: "v2"
+  });
 }
