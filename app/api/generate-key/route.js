@@ -1,5 +1,5 @@
 // app/api/generate-key/route.js
-import { generateAPIKey } from '../../lib/auth';
+import { generateAPIKey } from '../../../lib/auth';
 
 export async function POST() {
   const { rawKey, keyHash } = generateAPIKey();

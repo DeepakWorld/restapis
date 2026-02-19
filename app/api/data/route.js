@@ -1,4 +1,4 @@
-import { validateKey } from '../../lib/auth';
+import { validateKey } from '../../../lib/auth';
 
 export async function GET(request) {
   const apiKey = request.headers.get('x-api-key');
