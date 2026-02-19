@@ -29,6 +29,33 @@ export default function Dashboard() {
     checkUserAndFetch();
   }, [router]);
 
+
+const revokeKey = async (keyId) => {
+  if (!confirm("Are you sure? Any app using this key will stop working immediately.")) return;
+
+  const { error } = await supabase
+    .from('api_keys')
+    .delete()
+    .match({ id: keyId });
+
+  if (error) {
+    alert("Error revoking key: " + error.message);
+  } else {
+    // Refresh the list
+    fetchUserKeys();
+  }
+};
+
+const fetchUserKeys = async () => {
+  const { data, error } = await supabase
+    .from('api_keys')
+    .select('id, key_name, created_at')
+    .order('created_at', { ascending: false });
+
+  if (!error) setKeys(data);
+};
+
+// Update your existing useEffect to call fetchUserKeys()
   const generateAndStoreKey = async () => {
     try {
       const res = await fetch('/api/keys/create', { method: 'POST' });
@@ -83,23 +110,27 @@ export default function Dashboard() {
         </div>
       )}
 
-      <h2 style={{marginTop: '40px'}}>Secure Product Data</h2>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-        <thead style={{ backgroundColor: '#f3f4f6' }}>
-          <tr>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Product</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.products.map(p => (
-            <tr key={p.id}>
-              <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{p.name}</td>
-              <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <h2 style={{marginTop: '40px'}}>Your Active Keys</h2>
+<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+  <thead style={{ backgroundColor: '#f3f4f6' }}>
+    <tr>
+      <th style={{ padding: '12px', textAlign: 'left' }}>Label</th>
+      <th style={{ padding: '12px', textAlign: 'left' }}>Created</th>
+      <th style={{ padding: '12px', textAlign: 'right' }}>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {keys.map(k => (
+      <tr key={k.id}>
+        <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{k.key_name}</td>
+        <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{new Date(k.created_at).toLocaleDateString()}</td>
+        <td style={{ padding: '12px', borderBottom: '1px solid #eee', textAlign: 'right' }}>
+          <button onClick={() => revokeKey(k.id)} style={{color: 'red', border: 'none', background: 'none', cursor: 'pointer'}}>Revoke</button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
     </div>
   );
 }
