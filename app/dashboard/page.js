@@ -63,25 +63,26 @@ export default function Dashboard() {
       console.error("Fetch failed");
     }
   };
-  const generateAndStoreKey = async () => {
-    const res = await fetch('/api/keys/create', { method: 'POST' });
-    const result = await res.json();
-    
-    if (result.apiKey) {
-      const { error } = await supabase
-        .from('api_keys')
-        .insert([{ 
-          user_id: user.id, 
-          key_hash: result.keyHash, 
-          key_name: 'Main Key' 
-        }]);
+ const generateAndStoreKey = async () => {
+  const res = await fetch('/api/keys/create', { method: 'POST' });
+  const result = await res.json();
+  
+  if (result.apiKey) {
+    // The server already gave us the correct hash!
+    const { error } = await supabase
+      .from('api_keys')
+      .insert([{ 
+        user_id: user.id, 
+        key_hash: result.keyHash, // Use the hash FROM THE SERVER
+        key_name: 'Main Key' 
+      }]);
 
-      if (!error) {
-        setNewKey(result.apiKey);
-        fetchUserKeys(); // Refresh the list so it shows up
-      }
+    if (!error) {
+      setNewKey(result.apiKey);
+      fetchUserKeys();
     }
-  };
+  }
+};
 
   const revokeKey = async (keyId) => {
     if (!confirm("Revoke this key?")) return;

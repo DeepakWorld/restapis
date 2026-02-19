@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import { generateAPIKey } from '../../../../lib/auth';
+import { supabase } from '../../../lib/supabase';
+import { generateAPIKey } from '../../../lib/auth';
 
-export async function POST() {
-  try {
-    const { rawKey, keyHash } = generateAPIKey();
-    
-    // Return both the raw key (for the user to see once) 
-    // and the hash (to be stored in the database)
-    return NextResponse.json({ 
-      apiKey: rawKey, 
-      keyHash: keyHash 
-    });
-  } catch (error) {
-    console.error('Key generation error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
+export async function POST(request) {
+  // 1. Generate the raw key and the hash on the server
+  const { rawKey, keyHash } = generateAPIKey();
+
+  // 2. We need the user ID. For now, let's get it from the session 
+  // or a header if you're passing it. For this test, let's just use the hash.
+  
+  return NextResponse.json({ 
+    apiKey: rawKey, 
+    keyHash: keyHash 
+  });
 }
