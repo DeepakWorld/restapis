@@ -1,4 +1,4 @@
-import { generateAPIKey } from '../../../lib/auth';
+import { validateKey } from '@/app/lib/auth';
 
 export const dynamic = 'force-dynamic'; // This forces Vercel to not cache the old version
 
