@@ -4,18 +4,19 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request) {
   const apiKey = request.headers.get('x-api-key');
-  
-  if (!apiKey) return NextResponse.json({ error: 'Key required' }, { status: 401 });
-
   const hashedKey = hashAPIKey(apiKey);
+  
+  console.log("Incoming Raw Key:", apiKey?.substring(0, 10)); 
+  console.log("Generated Hash for lookup:", hashedKey);
 
   const { data, error } = await supabase
     .from('api_keys')
     .select('user_id')
-    .eq('key_hash', hashedKey) // Matches the fingerprint
+    .eq('key_hash', hashedKey)
     .single();
-
-  if (error || !data) {
+    
+  if (error) console.error("Supabase Error:", error.message);
+   if (error || !data) {
     return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
   }
 
