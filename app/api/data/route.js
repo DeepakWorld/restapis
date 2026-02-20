@@ -9,14 +9,18 @@ export async function GET(request) {
   console.log("Incoming Raw Key:", apiKey?.substring(0, 10)); 
   console.log("Generated Hash for lookup:", hashedKey);
 
-  const { data, error } = await supabase
+ const { data, error } = await supabase
     .from('api_keys')
     .select('user_id')
     .eq('key_hash', hashedKey)
-    .single();
+    .maybeSingle(); // Changing .single() to .maybeSingle()
     
-  if (error) console.error("Supabase Error:", error.message);
-   if (error || !data) {
+  if (error) {
+    console.error("Supabase Error:", error.message);
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
+
+  if (!data) {
     return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
   }
 

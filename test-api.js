@@ -1,20 +1,15 @@
 const API_URL = "https://restapis-xi.vercel.app/api/data";
-// This is the Anon Key you provided
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c2JyY3NnYndldG94bGNjd2NnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MTA5NTMsImV4cCI6MjA4NzA4Njk1M30.WC1D9y5kJR15HPFvHq-fZF_xTAX0C4LJCnffroDYy4o"; 
-// This is the custom key from your first attempt
-const CUSTOM_KEY = "myapi_eeef48a92ca1af1f28439c9bbe24d0c5428bacb61e343dbb";
+// PASTE YOUR NEW KEY HERE:
+const MY_KEY = "myapi_eeef48a92ca1af1f28439c9bbe24d0c5428bacb61e343dbb";
 
 async function testMyApi() {
-  console.log("🚀 Testing Hybrid Connection...");
+  console.log("🚀 Testing with the BRAND NEW key...");
   
   try {
     const response = await fetch(API_URL, {
       method: 'GET',
       headers: {
-        // We are sending both to cover all bases
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'x-api-key': CUSTOM_KEY, 
+        'x-api-key': MY_KEY,
         'Content-Type': 'application/json'
       }
     });
@@ -22,14 +17,12 @@ async function testMyApi() {
     const data = await response.json();
     
     if (response.ok) {
-      console.log("✅ ACCESS GRANTED");
-      // Check if products exists, otherwise show the whole object
-      if (data.products) console.table(data.products);
-      else console.log("Data received:", data);
+      console.log("✅ ACCESS GRANTED!");
+      console.table(data.products);
     } else {
       console.log("❌ ACCESS DENIED");
       console.log("Status:", response.status);
-      console.log("Server said:", data.message || data.error || data);
+      console.log("Server Message:", data.error);
     }
   } catch (err) {
     console.error("💥 Network Error:", err.message);

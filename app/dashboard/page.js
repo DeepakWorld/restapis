@@ -36,22 +36,14 @@ export default function Dashboard() {
     if (!error) setKeys(data || []);
   };
 
- const fetchInitialData = async () => {
-    // 1. First, check if there are any keys in the database for this user
-    const { data: userKeys } = await supabase
-      .from('api_keys')
-      .select('key_hash')
-      .limit(1);
+const fetchInitialData = async () => {
+    // 1. Get the current active key (either the one just generated or null)
+    const activeKey = newKey; 
 
-    // 2. If no keys exist, we can't fetch data yet
-    if (!userKeys || userKeys.length === 0) {
-      setData({ products: [] }); 
+    if (!activeKey) {
+      setData({ products: [], message: "Please generate a key to see data" });
       return;
     }
-
-    // 3. Use the NEW key you just generated (if available) or a default
-    // For now, let's use the one you just copied to prove it works!
-    const activeKey = newKey || "myapi_18b134340d58a3c8f21fb80a9153e8b4db4a8abc2dc22ec6";
 
     try {
       const res = await fetch('/api/data', { 
@@ -63,6 +55,8 @@ export default function Dashboard() {
       console.error("Fetch failed");
     }
   };
+
+
  const generateAndStoreKey = async () => {
   const res = await fetch('/api/keys/create', { method: 'POST' });
   const result = await res.json();
@@ -95,7 +89,21 @@ export default function Dashboard() {
   return (
     <div style={{ padding: '40px', fontFamily: 'system-ui, sans-serif' }}>
       <h1>Welcome, {user.email}</h1>
-      
+      // Add this inside your Dashboard component
+<button 
+  onClick={() => window.location.href = '/logout'}
+  style={{
+    marginTop: '20px',
+    padding: '10px 20px',
+    backgroundColor: '#ff4444',
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer'
+  }}
+>
+  Sign Out
+</button>
       <button 
         onClick={generateAndStoreKey}
         style={{ padding: '10px 20px', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
